@@ -86,18 +86,21 @@ This tool reverse engineers the **private Reader app API** (not the official pub
 
 ```
 elevenlabs/
-├── elevenlabs_tts_client.py    # Main CLI client
-├── tts                         # TTS wrapper script (auto-extracts tokens)
-├── token_manager.py            # Firebase token management
-├── utils/                      # Flow processing/analysis helpers
+├── elevenlabs_tts_client.py        # Main CLI client
+├── tts                             # Wrapper script (auto-extracts/caches tokens)
+├── token_manager.py                # Firebase token management
+├── utils/                          # Flow processing/analysis helpers
 │   ├── ws_dump.py
 │   ├── ws_dump2.py
 │   └── ws_flows_to_jsonl_redact.py
-├── get_refresh_token.py        # Refresh token extraction helper
-├── get_app_check_token.py      # Extracts Firebase App Check token from flows
-├── get_device_id.py            # Extracts device-id from flows
-├── extract_tokens.py           # Full token extractor from flows
-├── tests/                      # Test suite
+├── get_refresh_token.py            # Refresh token extraction helper
+├── get_app_check_token.py          # Extract Firebase App Check token
+├── get_device_id.py                # Extract device-id
+├── extract_tokens.py               # Full token extractor from flows
+├── analyze_flows.py                # Flow analysis utilities
+├── fix_websocket_method.py         # Reader WS method adjustments (dev)
+├── reader_websocket_implementation.py # Reference Reader WS implementation (dev)
+├── tests/                          # Test suite (script-style)
 │   ├── test_basic.py
 │   ├── test_client.py
 │   ├── test_create_and_wait.py
@@ -105,12 +108,15 @@ elevenlabs/
 │   ├── test_existing_read.py
 │   ├── test_reader_api.py
 │   └── test_user_reads.py
-├── examples.sh                 # Usage examples and methods
-├── requirements.txt            # Python dependencies
-└── README.md                   # This file (all docs consolidated)
+├── test-results/                   # Outputs from sample/test runs
+├── examples.sh                     # Usage examples and methods
+├── requirements.txt                # Python dependencies
+├── AGENTS.md                       # Contributor guidelines
+├── TODOS.md                        # Work-in-progress notes
+└── README.md                       # Main documentation
 ```
 
-Note: Temporary and large captured data live under `tmp/` (git-ignored).
+Note: Temporary and large captured data should live under `tmp/` (git-ignored). Sensitive artifacts like `tokens_cache.json` and `flows.*` are ignored via `.gitignore`.
 
 ## Installation
 
