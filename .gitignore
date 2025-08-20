@@ -57,3 +57,4 @@ test_output.*
 
 # Temporary files
 tmp/
+.claude/
