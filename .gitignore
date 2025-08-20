@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+tests/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Token cache and sensitive files
+tokens_cache.json
+extracted_tokens.json
+*.token
+*.key
+flows.*
+
+# Audio output files
+*.mp3
+*.wav
+*.m4a
+test_output.*
+
+# Logs
+*.log
+
+# Temporary files
+tmp/

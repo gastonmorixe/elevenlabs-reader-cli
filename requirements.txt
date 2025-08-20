@@ -1,0 +1,5 @@
+aiohttp>=3.8.0
+websockets>=11.0.0
+elevenlabs>=1.0.0
+asyncio
+python-dateutil>=2.8.0
