@@ -1,4 +1,4 @@
-# elevenlabs-reader-cli - Unofficial ElevenLabs Reader for the terminal
+# 🎤 elevenlabs-reader-cli - Unofficial ElevenLabs Reader for the terminal
 
 A command-line client for interacting with ElevenLabs Reader using the same backend the iOS app uses (unofficial). It supports creating Reader documents, streaming them over WebSocket with real-time playback, and basic library operations. Authentication mirrors the app (Firebase refresh token, App Check token, device-id) and uses your ElevenLabs account via the Reader pipeline.
 
