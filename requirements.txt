@@ -3,3 +3,6 @@ websockets>=11.0.0
 elevenlabs>=1.0.0
 asyncio
 python-dateutil>=2.8.0
+fastapi>=0.110.0
+uvicorn>=0.23.0
+requests>=2.31.0

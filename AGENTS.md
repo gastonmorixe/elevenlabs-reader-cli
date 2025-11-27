@@ -3,14 +3,16 @@
 ## Project Structure & Module Organization
 
 - `elevenlabs_tts_client.py`: Main CLI client (Reader workflow and streaming).
+- `api_server.py`: FastAPI server exposing HTTP/SSE endpoints for browser integrations.
 - `tts`: Convenience wrapper script (auto-extracts/caches tokens).
 - `token_manager.py`: Firebase token caching and refresh.
+- `extensions/userscript/`: Tampermonkey/Violentmonkey userscript for browser TTS.
 - `utils/`: Flow parsing and debugging helpers.
 - `tests/`: Script-style tests (`test_*.py`) runnable with Python.
 - `test-results/`: Output artifacts from sample runs.
 - `examples.sh`: End-to-end usage examples.
 - `requirements.txt`: Python runtime dependencies.
-- `tmp/` (git-ignored): Large or temporary data. Secrets are ignored via `.gitignore` (e.g., `tokens_cache.json`, `flows.*`).
+- `tmp/` (git-ignored): Large or temporary data. Secrets are ignored via `.gitignore` (e.g., `tokens_cache.json`, `flows.*`, `*.elevenlabsio`).
 
 ## Build, Test, and Development Commands
 
