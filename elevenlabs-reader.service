@@ -1,0 +1,35 @@
+[Unit]
+Description=ElevenLabs Reader API Server
+Documentation=file:///home/toor/elevenlabs-reader-firefox/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/toor/elevenlabs-reader-firefox
+ExecStart=/home/toor/elevenlabs-reader-firefox/venv/bin/python /home/toor/elevenlabs-reader-firefox/api_server.py --host 127.0.0.1 --port 8011
+Restart=on-failure
+RestartSec=5
+
+# Environment configuration
+Environment="ELEVEN_API_HOST=127.0.0.1"
+Environment="ELEVEN_API_PORT=8011"
+Environment="ELEVEN_CACHE_FILE=/home/toor/elevenlabs-reader-firefox/tokens_cache.json"
+Environment="ELEVEN_AUDIO_CACHE_DIR=/home/toor/elevenlabs-reader-firefox/tmp/audio"
+Environment="ELEVEN_SAVE_AUDIO=1"
+Environment="ELEVEN_DEFAULT_METHOD=reader"
+
+# Security hardening (optional, adjust as needed)
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/toor/elevenlabs-reader-firefox
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=elevenlabs-reader
+
+[Install]
+WantedBy=default.target
+
