@@ -17,6 +17,8 @@ A command-line client for interacting with ElevenLabs Reader using the same back
   - [3. Manual Usage (If You Want Full Control)](#3-manual-usage-if-you-want-full-control)
   - [4. Test the Implementation](#4-test-the-implementation)
   - [5. App Check Token and Device ID (Reader WS)](#5-app-check-token-and-device-id-reader-ws)
+- [Local API Server](#local-api-server)
+- [Browser Integration (Userscript)](#browser-integration-userscript)
 - [How It Works](#how-it-works)
   - [Reader App Workflow](#reader-app-workflow)
   - [Reader Streaming Internals (Multi‑Connection)](#reader-streaming-internals-multi-connection)
@@ -85,38 +87,34 @@ This tool reverse engineers the **private Reader app API** (not the official pub
 ## Project Structure
 
 ```
-elevenlabs/
+elevenlabs-reader-cli/
 ├── elevenlabs_tts_client.py        # Main CLI client
+├── api_server.py                   # FastAPI server for browser/external integrations
 ├── tts                             # Wrapper script (auto-extracts/caches tokens)
-├── token_manager.py                # Firebase token management
+├── token_manager.py                # Firebase token caching and refresh
+├── extensions/
+│   └── userscript/
+│       └── eleven-reader.user.js   # Tampermonkey/Violentmonkey userscript
 ├── utils/                          # Flow processing/analysis helpers
 │   ├── ws_dump.py
 │   ├── ws_dump2.py
 │   └── ws_flows_to_jsonl_redact.py
+├── mitm_firebase_token_sniffer.py  # mitmproxy script for token capture
 ├── get_refresh_token.py            # Refresh token extraction helper
 ├── get_app_check_token.py          # Extract Firebase App Check token
 ├── get_device_id.py                # Extract device-id
 ├── extract_tokens.py               # Full token extractor from flows
-├── analyze_flows.py                # Flow analysis utilities
-├── fix_websocket_method.py         # Reader WS method adjustments (dev)
-├── reader_websocket_implementation.py # Reference Reader WS implementation (dev)
 ├── tests/                          # Test suite (script-style)
 │   ├── test_basic.py
 │   ├── test_client.py
-│   ├── test_create_and_wait.py
-│   ├── test_direct_read_id.py
-│   ├── test_existing_read.py
-│   ├── test_reader_api.py
-│   └── test_user_reads.py
-├── test-results/                   # Outputs from sample/test runs
+│   └── ...
 ├── examples.sh                     # Usage examples and methods
 ├── requirements.txt                # Python dependencies
 ├── AGENTS.md                       # Contributor guidelines
-├── TODOS.md                        # Work-in-progress notes
 └── README.md                       # Main documentation
 ```
 
-Note: Temporary and large captured data should live under `tmp/` (git-ignored). Sensitive artifacts like `tokens_cache.json` and `flows.*` are ignored via `.gitignore`.
+Note: Temporary and large captured data should live under `tmp/` (git-ignored). Sensitive artifacts like `tokens_cache.json`, `flows.*`, and `*.elevenlabsio` are ignored via `.gitignore`.
 
 ## Installation
 
@@ -131,6 +129,25 @@ chmod +x tts
 ### 1. Get Firebase Refresh Token
 
 You need a Firebase refresh token from the ElevenLabs Reader mobile app. This can be extracted from network traffic or device storage.
+
+#### Option: Capture via mitmproxy
+
+We ship `mitm_firebase_token_sniffer.py`, a mitmproxy inline script that watches Reader traffic and dumps Firebase tokens in real time.
+
+1. Install [mitmproxy](https://mitmproxy.org/) (macOS: `brew install mitmproxy`, Linux: `pipx install mitmproxy` or distro package).
+2. Run the sniffer and save flows for later analysis:
+   ```bash
+   mitmdump -q -s mitm_firebase_token_sniffer.py -w tmp/flows.elevenlabsio
+   ```
+3. Point your mobile device at the proxy, trust the mitmproxy certificate, then open/sign in to the ElevenLabs Reader app.
+4. Watch the mitmproxy log or `tmp/firebase_tokens.jsonl` for lines such as:
+   ```
+   {"ts": 1732729830.11, "source": "response", "url": "...securetoken.googleapis.com...",
+    "refresh_token": "AMf-vBw6ZWBpOHOOs-iI7...", "access_token": "eyJhbGciOiJSUzI1NiIs...", "expires_in": "3600"}
+   ```
+5. Copy the `refresh_token` into `./tts`/`api_server.py` and keep the capture file (`flows.elevenlabsio`) for token/app-check/device extraction via the existing helpers.
+
+Security tip: stop mitmproxy once you have the token, since all device traffic transits the proxy while it’s enabled.
 
 ### 2. Easy Usage (No Token Typing!)
 
@@ -285,6 +302,99 @@ Pass manually if needed: `--app-check-token "<token>" --device-id "<uuid>"`. Tok
 - Header name: `device-id`
 - Purpose: stable UUID used by the Reader app; keep consistent across requests
 - How to obtain: captured from flows or generated on first run and cached; override with `--device-id`
+
+## Local API Server
+
+Use `api_server.py` to expose a localhost HTTP interface for new integrations (browser add-ons, stream decks, etc.) without invoking the CLI manually.
+
+### 1. Configure and launch
+
+```bash
+pip install -r requirements.txt
+export FIREBASE_REFRESH_TOKEN="your_refresh_token"
+export ELEVEN_DEFAULT_VOICE_ID="nPczCjzI2devNBz1zQrb"
+# Optional env: XI_APP_CHECK_TOKEN, ELEVEN_DEVICE_ID, ELEVEN_DEFAULT_METHOD, ELEVEN_API_PORT
+python api_server.py --port 8011
+```
+
+- `FIREBASE_REFRESH_TOKEN` is required (falls back to `tokens_cache.json` if you already ran `./tts`).
+- `ELEVEN_DEFAULT_VOICE_ID` provides the server-side default `voice_id` when requests omit one.
+- `ELEVEN_DEFAULT_METHOD` defaults to `reader` but accepts `http`, `websocket`, or `auto`.
+- `ELEVEN_API_ALLOWED_ORIGINS` lets you restrict CORS (defaults to localhost + `moz-extension://*`).
+
+### 2. Call the API
+
+```bash
+curl -X POST http://127.0.0.1:8011/api/read \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Hello from the local API!"}'
+```
+
+Example response:
+
+```json
+{
+  "voice_id": "nPczCjzI2devNBz1zQrb",
+  "method": "reader",
+  "byte_length": 58234,
+  "mime_type": "audio/mpeg",
+  "audio_base64": "SUQzAwAAAAAAF1RTU0UAA...",
+  "duration_seconds": 8.412,
+  "text_preview": "Hello from the local API..."
+}
+```
+
+Helper endpoints:
+
+- `GET /healthz` → readiness + default configuration snapshot.
+- `GET /api/voices` → mirrors `./tts --list-voices`.
+
+## Browser Integration (Userscript)
+
+A Tampermonkey/Violentmonkey userscript provides a floating speaker button for reading selected text. It uses **real-time SSE streaming** for instant playback as audio generates.
+
+### Features
+
+- 🔊 **Floating speaker button** appears when you select text on any page
+- ⚡ **True streaming playback** — audio starts playing within seconds, not after full generation
+- 🎯 **Smart positioning** — button always appears within the viewport, even for long selections
+- 🔄 **Gapless playback** — chunks are preloaded and concatenated for seamless audio
+- 📊 **Progress toasts** — shows status (creating, streaming, chunk count)
+- ⌨️ **Keyboard support** — press Escape to stop playback
+
+### Installation
+
+1. Install [Tampermonkey](https://www.tampermonkey.net/) (Firefox/Chrome) or [Violentmonkey](https://violentmonkey.github.io/)
+2. Open the userscript file: `extensions/userscript/eleven-reader.user.js`
+3. Click "Install" when prompted by your userscript manager
+4. Ensure the API server is running on `http://127.0.0.1:8011`
+
+### Usage
+
+1. Start the API server:
+   ```bash
+   FIREBASE_REFRESH_TOKEN="..." python api_server.py --port 8011
+   ```
+2. Select any text on a webpage
+3. Click the 🔊 speaker button that appears
+4. Audio streams and plays in real-time
+
+### Configuration
+
+Edit the constants at the top of `eleven-reader.user.js`:
+
+```javascript
+const API_BASE = "http://127.0.0.1:8011";  // API server URL
+const PRELOAD_SECONDS = 5;                  // Seconds before end to preload next chunk
+```
+
+### How It Works
+
+1. Selected text is sent to `/api/stream` (Server-Sent Events endpoint)
+2. Server creates a Reader document and streams audio chunks as they generate
+3. Userscript receives chunks via native `fetch` ReadableStream for true streaming
+4. Audio chunks are queued and played sequentially with preloading for gapless playback
+5. Each chunk is a complete MP3 segment that plays immediately
 
 ## How It Works
 

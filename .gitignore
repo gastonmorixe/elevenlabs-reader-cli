@@ -42,9 +42,12 @@ Thumbs.db
 # Token cache and sensitive files
 tokens_cache.json
 extracted_tokens.json
+login_tokens.json
+firebase_tokens.jsonl
 *.token
 *.key
 flows.*
+*.elevenlabsio
 
 # Audio output files
 *.mp3
@@ -58,3 +61,7 @@ test_output.*
 # Temporary files
 tmp/
 .claude/
+
+# Test results (keep directory structure, ignore contents)
+test-results/*.json
+test-results/*.mp3
