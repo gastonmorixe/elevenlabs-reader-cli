@@ -949,7 +949,7 @@ class ElevenLabsTTSClient:
                 self.logger.warning(f"⚠️ Failed to PATCH read before streaming: {e}")
 
         # Step 3: Connect to Reader WebSocket with the read_id
-        ws_url = f"wss://api.elevenlabs.io/v1/reader/reads/stream/{read_id}?voice_id={voice_id}"
+        ws_url = f"wss://api.elevenlabs.io/v1/reader/reads/stream/v2/{read_id}?voice_id={voice_id}"
 
         headers = {
             "Authorization": f"Bearer {self.bearer_token}",
@@ -1118,7 +1118,7 @@ class ElevenLabsTTSClient:
         chunk_count = 0
         current_position = position  # absolute char offset for next WS
         abs_char_pos = position      # durable absolute progress already played
-        ws_url = f"wss://api.elevenlabs.io/v1/reader/reads/stream/{read_id}?voice_id={voice_id}"
+        ws_url = f"wss://api.elevenlabs.io/v1/reader/reads/stream/v2/{read_id}?voice_id={voice_id}"
         connection_number = 1
         
         # Backoff for abnormal closes
@@ -1156,7 +1156,7 @@ class ElevenLabsTTSClient:
             idle_timeout = 1.5  # seconds without messages → rollover if we already streamed something
             
             try:
-                async with websockets.connect(ws_url, additional_headers=headers, ping_timeout=300) as websocket:
+                async with websockets.connect(ws_url, additional_headers=headers, ping_timeout=300, max_size=None) as websocket:
                     message = {"stream_id": str(uuid.uuid4()).upper(), "position": current_position}
                     await websocket.send(json.dumps(message))
                     
@@ -1372,7 +1372,7 @@ class ElevenLabsTTSClient:
             print(f"🎭 Streaming from existing document: {read_id}")
 
         # Connect directly to WebSocket with existing read_id (no document creation needed)
-        ws_url = f"wss://api.elevenlabs.io/v1/reader/reads/stream/{read_id}?voice_id={voice_id}"
+        ws_url = f"wss://api.elevenlabs.io/v1/reader/reads/stream/v2/{read_id}?voice_id={voice_id}"
 
         headers = {
             "Authorization": f"Bearer {self.bearer_token}",
